@@ -27,9 +27,9 @@ class DisableReels : AccessibilityService() {
         // chats
         if(event.contentDescription != null)
         {
-            val desc = event.contentDescription!!
-            if(desc.contains("seen", true) ||
-                desc.contains("sent", true))
+            val len = event.contentDescription!!.length
+            val desc = event.contentDescription!!.subSequence(len - 3, len)
+            if(desc == "ago")
                 blockNextEventReason = event.contentDescription
         }
 

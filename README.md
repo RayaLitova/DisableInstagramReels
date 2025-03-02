@@ -11,6 +11,3 @@ An accessibility service for Android which disables instagram reels
   3) Click on _"Allow restricted settings"_
      
 Enjoy :)
-
-# Issues
-Currently cannot prevent scrolling after opening reels from a post.

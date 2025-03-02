@@ -1,59 +1,56 @@
 package com.example.disablereels
 import android.accessibilityservice.AccessibilityService
+import android.os.Handler
+import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
 
 
 class DisableReels : AccessibilityService() {
     private var blockNextEventReason : CharSequence? = null
-    private var setBlockedOnNextEvent : Boolean = false
-
-    private fun tryClearBlockNextEventReason()
-    {
-        // suggested reels and reels button
-        if(blockNextEventReason == "Reels"){
-            blockNextEventReason = null
-        }
-    }
+    private var canBlockEvent : Boolean = true
 
     private fun trySetBlockNextEventReason(event: AccessibilityEvent)
     {
-        if(blockNextEventReason != null)
-            return
-
         // Reels button
         if(event.contentDescription == "Reels")
+            blockNextEventReason = "ReelsButton"
+
+        // View a reel
+        if (event.className == "androidx.viewpager.widget.ViewPager")
             blockNextEventReason = "Reels"
 
-        // chats
-        if(event.contentDescription != null)
-        {
-            val len = event.contentDescription!!.length
-            val desc = event.contentDescription!!.subSequence(len - 3, len)
-            if(desc == "ago")
-                blockNextEventReason = event.contentDescription
-        }
+        // Exit chat
+        if (event.className == "com.instagram.mainactivity.InstagramMainActivity")
+            blockNextEventReason = null
 
-        if(setBlockedOnNextEvent)
-        {
-            blockNextEventReason = "Reels"
-            setBlockedOnNextEvent = false
-        }
+        // Back event and scrolling feed
+        if(event.className == "androidx.recyclerview.widget.RecyclerView")
+            blockNextEventReason = null
+    }
 
-        // suggested reels (allow opening previewed reels but block scrolling)
-        if(event.className == "android.widget.FrameLayout" && event.source != null && event.contentDescription == null) {
-            setBlockedOnNextEvent = true
+    private fun blockEvent()
+    {
+        blockNextEventReason = null
+
+        // Prevent multiple consecutive back actions
+        if(canBlockEvent) {
+            performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+            canBlockEvent = false
+
+            // Allow back actions again after one second
+            Handler(Looper.getMainLooper()).postDelayed({ canBlockEvent = true },1000)
         }
     }
 
-    private fun tryBlockEvent(event : AccessibilityEvent)
-    {
+    private fun tryBlockEvent(event : AccessibilityEvent) {
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
             event.className == "android.view.View" &&
+            blockNextEventReason == "ReelsButton")
+            blockEvent()
+
+        else if (event.className == "androidx.viewpager.widget.ViewPager" &&
             blockNextEventReason != null)
-        {
-            tryClearBlockNextEventReason()
-            performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
-        }
+            blockEvent()
     }
 
     override fun onInterrupt() {}
@@ -62,11 +59,7 @@ class DisableReels : AccessibilityService() {
         if(event == null)
             return
 
-        // event for chat exit
-        if (event.className == "com.instagram.mainactivity.InstagramMainActivity")
-            blockNextEventReason = null
-
-        trySetBlockNextEventReason(event)
         tryBlockEvent(event)
+        trySetBlockNextEventReason(event)
     }
 }

@@ -15,16 +15,24 @@ class DisableReels : AccessibilityService() {
         if(event.contentDescription == "Reels")
             blockNextEventReason = "ReelsButton"
 
+        // View post in chat
+        if(event.className == "androidx.viewpager.widget.ViewPager" && event.itemCount == -1)
+            blockNextEventReason = null
+
         // View a reel
-        if (event.className == "androidx.viewpager.widget.ViewPager")
+        else if (event.className == "androidx.viewpager.widget.ViewPager")
             blockNextEventReason = "Reels"
 
         // Exit chat
-        if (event.className == "com.instagram.mainactivity.InstagramMainActivity")
+        else if (event.className == "com.instagram.mainactivity.InstagramMainActivity")
             blockNextEventReason = null
 
         // Back event and scrolling feed
-        if(event.className == "androidx.recyclerview.widget.RecyclerView")
+        else if(event.className == "androidx.recyclerview.widget.RecyclerView")
+            blockNextEventReason = null
+
+        // View reel in chat
+        else if(event.className == "com.instagram.modal.ModalActivity")
             blockNextEventReason = null
     }
 
@@ -37,8 +45,8 @@ class DisableReels : AccessibilityService() {
             performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
             canBlockEvent = false
 
-            // Allow back actions again after one second
-            Handler(Looper.getMainLooper()).postDelayed({ canBlockEvent = true },1000)
+            // Allow back actions again after 200 ms
+            Handler(Looper.getMainLooper()).postDelayed({ canBlockEvent = true }, 500)
         }
     }
 
